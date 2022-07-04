@@ -1,4 +1,5 @@
 import xlwings as xw
+import pandas as pd
 
 if __name__ == '__main__':
     app = xw.App(visible=True, add_book=False)
@@ -10,9 +11,10 @@ if __name__ == '__main__':
     # b3 = sht.range((1, 1), (3, 3))
     # v = b3.value
     # print(v)
-    nrow = sht.api.UsedRange.Rows.count
-    ncol = sht.api.UsedRange.Columns.count
-    print(nrow)
-    print(ncol)
+    lastrow = sht.used_range.last_cell.column
+    lastcol = sht.used_range.last_cell.row
+    print(lastrow)
+    print(lastcol)
+    value = xw.load()
     wb.close()
     app.quit()
