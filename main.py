@@ -1,20 +1,33 @@
-import xlwings as xw
 import pandas as pd
 
+
+def func_2021_zj_zwb():
+    ptgw = pd.read_excel(r'2021-zj-zwb.xlsx', 0)
+    print(ptgw.shape)
+    xzzfl = pd.read_excel(r'2021-zj-zwb.xlsx', 1)
+    print(xzzfl.shape)
+    zyjsl = pd.read_excel(r'2021-zj-zwb.xlsx', 2)
+    print(zyjsl.shape)
+    res = pd.concat([ptgw, xzzfl, zyjsl])
+    print(func_2021_zj_zwb, res.shape)
+    return res
+
+
+def get_zhuanye_zwb_num(df):
+    zhuanyekey = ["计算机科学与技术", "法学", "汉语言"]
+    zhuanyevalue = [0, 0, 0]
+
+    for index, row in df.iterrows():
+        zhuanye = row[16]
+        for num in range(len(zhuanyekey)):
+            if zhuanyekey[num] in zhuanye:
+                zhuanyevalue[num] += 1
+
+    print(zhuanyekey)
+    print(zhuanyevalue)
+
+
+# http://www.zyksw.cn/articles?navLv1Id=1&navLv2Id=3&sectionKey=lv3_provincial_exam_6&subjectId=&page=20
 if __name__ == '__main__':
-    app = xw.App(visible=True, add_book=False)
-    app.display_alerts = True  # 关闭一些提示信息，可以加快运行速度。 默认为 True。
-    app.screen_updating = False  # 更新显示工作表的内容。默认为 True。关闭它也可以提升运行速度。
-    wb = app.books.open(r'1.xlsx')
-    sht = wb.sheets[0]
-    # 获取 b3 中的值
-    # b3 = sht.range((1, 1), (3, 3))
-    # v = b3.value
-    # print(v)
-    lastrow = sht.used_range.last_cell.column
-    lastcol = sht.used_range.last_cell.row
-    print(lastrow)
-    print(lastcol)
-    value = xw.load()
-    wb.close()
-    app.quit()
+    res = func_2021_zj_zwb()
+    get_zhuanye_zwb_num(res)
