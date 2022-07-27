@@ -1,3 +1,4 @@
 xlwings
 pandas
 openpyxl
+xlrd
