@@ -1,4 +1,5 @@
 import os.path
+import re
 
 import numpy as np
 import pandas as pd
@@ -40,13 +41,9 @@ class Data:
         df = pd.read_excel(name, 0)
         return df
 
-    def func_zj_jmmd(self, year, city):
-        print(year, city)
-        if os.path.exists('{}-zjsk-{}-jmmd.xlsx'.format(year, city)):
-            name = '{}-zjsk-{}-jmmd.xlsx'.format(year, city)
-        else:
-            name = '{}-zjsk-{}-jmmd.xls'.format(year, city)
-        df = pd.read_excel(name, 0)
+    def func_zj_jmmd(self, path):
+        print("==={}===".format(path))
+        df = pd.read_excel(path, 0)
         if {'招考单位'}.issubset(df.columns):
             temp1 = "招考单位"
         elif {"招考单位名称"}.issubset(df.columns):
@@ -55,7 +52,12 @@ class Data:
             temp1 = "招考单位名称"
         elif {"报考单位"}.issubset(df.columns):
             temp1 = "招考单位"
+        elif {"招录部门"}.issubset(df.columns):
+            temp1 = "招录部门"
+        elif {"招录单位"}.issubset(df.columns):
+            temp1 = "招录单位"
         else:
+            print(path)
             raise Exception(df.columns.values)
         if {"职位名称"}.issubset(df.columns):
             temp2 = "职位名称"
@@ -63,10 +65,28 @@ class Data:
             temp2 = "报考职位名称"
         elif {"报考职位"}.issubset(df.columns):
             temp2 = "报考职位"
+        elif {"招考职位"}.issubset(df.columns):
+            temp2 = "招考职位"
+        elif {"招录职位"}.issubset(df.columns):
+            temp2 = "招录职位"
+        elif {"报考岗位"}.issubset(df.columns):
+            temp2 = "报考岗位"
         else:
+            print(path)
             raise Exception(df.columns.values)
-        df.rename(columns={'报考单位名称': '招录单位名称', '招考单位名称': '招录单位名称', '招考单位': '招录单位名称', '报考单位': '招录单位名称'}, inplace=True)
-        df.rename(columns={'报考职位名称': "职位名称", '报考职位': "职位名称"}, inplace=True)
+        df.rename(columns={'报考单位名称': '招录单位名称',
+                           '招考单位名称': '招录单位名称',
+                           '招考单位': '招录单位名称',
+                           '报考单位': '招录单位名称',
+                           '招录单位': '招录单位名称',
+                           '招录部门': '招录单位名称'
+                           }, inplace=True)
+        df.rename(columns={'报考职位名称': "职位名称",
+                           '报考职位': "职位名称",
+                           '招考职位': "职位名称",
+                           '招录职位': "职位名称",
+                           '报考岗位': "职位名称",
+                           }, inplace=True)
         df = df.groupby(['招录单位名称', '职位名称'], as_index=False).agg({'总分': [max, min]})
         return df
 
@@ -88,13 +108,18 @@ if __name__ == '__main__':
     # 计算并新增‘竞争比’列
     res["竞争比"] = res["缴费人数"] / res["招录人数"]
     # 读取各县市2021 成绩信息表
-    temp = ['shaoxin-keqiao', 'shaoxin-shangyu', 'shaoxin-shaoxin', 'shaoxin-shenzhou', 'shaoxin-xinchang',
-            'shaoxin-zhuji']
+    match_file = []
+    pattern_str = '.*' + '.*'.join(["{}-zjsk(.*?)-jmmd(.*?)".format(2021)])
+    re_pattern = re.compile(pattern=pattern_str)
+    file_list = os.listdir(".")
+    for file_name in file_list:
+        if re_pattern.search(file_name):
+            match_file.append(file_name)
     ...
     # 进行合并
     dflist = []
-    for path in temp:
-        dflist.append(data.func_zj_jmmd(2021, path))
+    for path in match_file:
+        dflist.append(data.func_zj_jmmd(path))
     df = pd.concat(dflist)
     # 按照 '招录单位名称','职位名称' 合并 成绩信息表 和 res表
     res = pd.merge(res, df, on=['招录单位名称', '职位名称'], how='left')
