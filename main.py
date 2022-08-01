@@ -135,50 +135,115 @@ class DataProcess:
             # 导出表
             self.data.write(res, "2021-result.xlsx")
 
-    def cal(self, yingjie=False):
+    #   hujilimit 限户籍 0不考虑 1筛选限制的 2排除限制的
+    def cal(self, yingjie=False, area="00", hujilimit=0, zhuanyelimit=True):
         # key:专业 value:[职位数,总人数,岗位最高总分,岗位最低总分,最高平均分,最低平均分,竞争比]
         zhuanyemap = dict()
         df = self.data.func_zj_huizong()
-        for index, row in df.iterrows():
-            for zhuanye in self.data.zhuanyekey:
-                if row["专业要求"] is None or \
-                        isinstance(row["专业要求"], float) or \
-                        math.isnan(row["max"]) or \
+        # 过滤 去除公安局警察
+        df = df[df['max'] >= 100]
+        # 地区过滤 职位代码133XY001003000000
+        # XY=>01:杭州 02:宁波 03:温州 04:嘉兴 05:湖州
+        # 06：绍兴 07:金华 08:衢州 09:舟山 10:台州
+        # 11:丽水 12 省直 13: 省直公安 14:监狱
+        if area != "00":
+            areacodemap = {}
+            areacodemap["01"] = "杭州"
+            areacodemap["02"] = "宁波"
+            areacodemap["03"] = "温州"
+            areacodemap["04"] = "嘉兴"
+            areacodemap["05"] = "湖州"
+            areacodemap["06"] = "绍兴"
+            start = int("133{}000000000000".format(area))
+            end = int("133{}999999999999".format(area))
+            df = df[df.职位代码.between(start, end)]
+            for x in df.index:
+                if isinstance(df.loc[x, "备注"], float):
+                    if hujilimit == 1:
+                        df.drop(x, inplace=True)
+                    continue
+                if areacodemap[area] in df.loc[x, "备注"]:
+                    if hujilimit == 2:
+                        df.drop(x, inplace=True)
+                else:
+                    if hujilimit == 1:
+                        df.drop(x, inplace=True)
+        c = "不限户籍"
+        if hujilimit == 1:
+            c = "仅限户籍"
+        elif hujilimit == 2:
+            c = "排除户籍限制"
+        print("======={},{}地区==========".format(c, area))
+        if zhuanyelimit:
+            for index, row in df.iterrows():
+                for zhuanye in self.data.zhuanyekey:
+                    if row["专业要求"] is None or \
+                            isinstance(row["专业要求"], float) or \
+                            math.isnan(row["max"]) or \
+                            math.isnan(row["min"]):
+                        continue
+                    if zhuanyemap.get(zhuanye) is None:
+                        zhuanyemap[zhuanye] = [0, 0, 0, 0, 0, 0, 0]
+                        zhuanyemap[zhuanye + "应届"] = [0, 0, 0, 0, 0, 0, 0]
+                        zhuanyemap[zhuanye + "非应届"] = [0, 0, 0, 0, 0, 0, 0]
+                    sf = row["现有身份要求"]
+                    if zhuanye in row["专业要求"]:
+                        zhuanyemap[zhuanye][0] += row["招录人数"]
+                        zhuanyemap[zhuanye][1] += row["缴费人数"]
+                        zhuanyemap[zhuanye][2] += row["max"] * row["招录人数"]
+                        zhuanyemap[zhuanye][3] += row["min"] * row["招录人数"]
+                        if yingjie:
+                            if "应届" in sf:
+                                zhuanyemap[zhuanye + "应届"][0] += row["招录人数"]
+                                zhuanyemap[zhuanye + "应届"][1] += row["缴费人数"]
+                                zhuanyemap[zhuanye + "应届"][2] += row["max"] * row["招录人数"]
+                                zhuanyemap[zhuanye + "应届"][3] += row["min"] * row["招录人数"]
+                            else:
+                                zhuanyemap[zhuanye + "非应届"][0] += row["招录人数"]
+                                zhuanyemap[zhuanye + "非应届"][1] += row["缴费人数"]
+                                zhuanyemap[zhuanye + "非应届"][2] += row["max"] * row["招录人数"]
+                                zhuanyemap[zhuanye + "非应届"][3] += row["min"] * row["招录人数"]
+                    continue
+            # 计算
+            for k, val in zhuanyemap.items():
+                val[4] = val[2] / val[0]
+                val[5] = val[3] / val[0]
+                val[6] = val[1] / val[0]
+
+            for k, val in zhuanyemap.items():
+                print("专业:{} 岗位数{},最高平均分{},进面平均分{},竞争比{}".format(k, val[0], val[4], val[5], val[6]))
+
+        else:
+            temp = [0, 0, 0, 0, 0, 0, 0]
+            for index, row in df.iterrows():
+                if math.isnan(row["max"]) or \
                         math.isnan(row["min"]):
                     continue
-                if zhuanyemap.get(zhuanye) is None:
-                    zhuanyemap[zhuanye] = [0, 0, 0, 0, 0, 0, 0]
-                    zhuanyemap[zhuanye + "应届"] = [0, 0, 0, 0, 0, 0, 0]
-                    zhuanyemap[zhuanye + "非应届"] = [0, 0, 0, 0, 0, 0, 0]
-                sf = row["现有身份要求"]
-                if zhuanye in row["专业要求"]:
-                    zhuanyemap[zhuanye][0] += row["招录人数"]
-                    zhuanyemap[zhuanye][1] += row["缴费人数"]
-                    zhuanyemap[zhuanye][2] += row["max"] * row["招录人数"]
-                    zhuanyemap[zhuanye][3] += row["min"] * row["招录人数"]
-                    if yingjie:
-                        if "应届" in sf:
-                            zhuanyemap[zhuanye + "应届"][0] += row["招录人数"]
-                            zhuanyemap[zhuanye + "应届"][1] += row["缴费人数"]
-                            zhuanyemap[zhuanye + "应届"][2] += row["max"] * row["招录人数"]
-                            zhuanyemap[zhuanye + "应届"][3] += row["min"] * row["招录人数"]
-                        else:
-                            zhuanyemap[zhuanye + "非应届"][0] += row["招录人数"]
-                            zhuanyemap[zhuanye + "非应届"][1] += row["缴费人数"]
-                            zhuanyemap[zhuanye + "非应届"][2] += row["max"] * row["招录人数"]
-                            zhuanyemap[zhuanye + "非应届"][3] += row["min"] * row["招录人数"]
-                continue
-        # 计算
-        for k, val in zhuanyemap.items():
-            val[4] = val[2] / val[0]
-            val[5] = val[3] / val[0]
-            val[6] = val[1] / val[0]
-        for k, val in zhuanyemap.items():
-            print()
-            print("专业:{} 岗位数{},最高平均分{},最低平均分{},竞争比{}".format(k, val[0], val[4], val[5], val[6]))
+                temp[0] += row["招录人数"]
+                temp[1] += row["缴费人数"]
+                temp[2] += row["max"] * row["招录人数"]
+                temp[3] += row["min"] * row["招录人数"]
+            # 计算
+            temp[4] = temp[2] / temp[0]
+            temp[5] = temp[3] / temp[0]
+            temp[6] = temp[1] / temp[0]
+
+            print("岗位数{},最高平均分{},进面平均分{},竞争比{}".format(temp[0], temp[4], temp[5], temp[6]))
 
 
 # http://www.zyksw.cn/articles?navLv1Id=1&navLv2Id=3&sectionKey=lv3_provincial_exam_6&subjectId=&page=20
 if __name__ == '__main__':
+    print('''
+          00:汇总 01:杭州 02:宁波 03:温州 04:嘉兴 05:湖州
+          06：绍兴 07:金华 08:衢州 09:舟山 10:台州
+          11:丽水 12 省直 13: 省直公安 14:监狱
+          ''')
     p = DataProcess(reload=False)
-    p.cal(yingjie=True)
+    p.cal(yingjie=True, area="01", hujilimit=1, zhuanyelimit=False)
+    p.cal(yingjie=True, area="02", hujilimit=1, zhuanyelimit=False)
+    p.cal(yingjie=True, area="03", hujilimit=1, zhuanyelimit=False)
+    p.cal(yingjie=True, area="06", hujilimit=1, zhuanyelimit=False)
+    p.cal(yingjie=True, area="01", hujilimit=2, zhuanyelimit=False)
+    p.cal(yingjie=True, area="02", hujilimit=2, zhuanyelimit=False)
+    p.cal(yingjie=True, area="03", hujilimit=2, zhuanyelimit=False)
+    p.cal(yingjie=True, area="06", hujilimit=2, zhuanyelimit=False)
