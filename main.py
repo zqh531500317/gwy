@@ -162,7 +162,8 @@ class DataProcess:
                     if hujilimit == 1:
                         df.drop(x, inplace=True)
                     continue
-                if areacodemap[area] in df.loc[x, "备注"]:
+                if areacodemap[area] in df.loc[x, "备注"] or "本市" in df.loc[x, "备注"] or "户籍" in df.loc[x, "备注"] or "生源" in \
+                        df.loc[x, "备注"]:
                     if hujilimit == 2:
                         df.drop(x, inplace=True)
                 else:
