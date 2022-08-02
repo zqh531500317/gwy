@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 from pandas import DataFrame
 
+from Filter import Filter
+
 
 class Data:
     def __init__(self):
@@ -240,11 +242,17 @@ if __name__ == '__main__':
           11:丽水 12 省直 13: 省直公安 14:监狱
           ''')
     p = DataProcess(reload=False)
-    p.cal(yingjie=True, area="01", hujilimit=1, zhuanyelimit=False)
-    p.cal(yingjie=True, area="01", hujilimit=2, zhuanyelimit=False)
-    p.cal(yingjie=True, area="02", hujilimit=1, zhuanyelimit=False)
-    p.cal(yingjie=True, area="02", hujilimit=2, zhuanyelimit=False)
-    p.cal(yingjie=True, area="03", hujilimit=1, zhuanyelimit=False)
-    p.cal(yingjie=True, area="03", hujilimit=2, zhuanyelimit=False)
-    p.cal(yingjie=True, area="06", hujilimit=1, zhuanyelimit=False)
-    p.cal(yingjie=True, area="06", hujilimit=2, zhuanyelimit=False)
+    # p.cal(yingjie=True, area="01", hujilimit=1, zhuanyelimit=False)
+    # p.cal(yingjie=True, area="01", hujilimit=2, zhuanyelimit=False)
+    # p.cal(yingjie=True, area="02", hujilimit=1, zhuanyelimit=False)
+    # p.cal(yingjie=True, area="02", hujilimit=2, zhuanyelimit=False)
+    # p.cal(yingjie=True, area="03", hujilimit=1, zhuanyelimit=False)
+    # p.cal(yingjie=True, area="03", hujilimit=2, zhuanyelimit=False)
+    # p.cal(yingjie=True, area="06", hujilimit=1, zhuanyelimit=False)
+    # p.cal(yingjie=True, area="06", hujilimit=2, zhuanyelimit=False)
+    df = p.data.func_zj_huizong()
+    df1 = Filter.filter_yingjie(df, True)
+    df2 = Filter.filter_yingjie(df, False)
+    print(df.shape)
+    print(df1.shape)
+    print(df2.shape)
