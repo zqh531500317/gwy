@@ -136,7 +136,7 @@ class DataProcess:
             # 导出表
             self.data.write(res, "2021-result.xlsx")
 
-    def single_cal(self, dw:DataFrameWrap):
+    def single_cal(self, dw: DataFrameWrap):
         temp = [0, 0, 0, 0, 0, 0, 0]
         df = dw.df
         for index, row in df.iterrows():
@@ -269,6 +269,7 @@ if __name__ == '__main__':
     # p.cal(yingjie=True, area="06", hujilimit=2, zhuanyelimit=False)
     df = p.data.func_zj_huizong()
     dw = DataFrameWrap(df)
+
     dw1 = Filter.filter_zhuanye(dw, "汉语言")
     dw11 = Filter.filter_sex(dw1, sex="男", include_buxian=False)
     dw12 = Filter.filter_sex(dw1, sex="女", include_buxian=False)

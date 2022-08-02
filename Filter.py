@@ -1,4 +1,3 @@
-from pandas import DataFrame
 import copy
 
 from DataFrameWrap import DataFrameWrap
