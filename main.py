@@ -268,22 +268,16 @@ if __name__ == '__main__':
     # p.cal(yingjie=True, area="06", hujilimit=1, zhuanyelimit=False)
     # p.cal(yingjie=True, area="06", hujilimit=2, zhuanyelimit=False)
     df = p.data.func_zj_huizong()
-    dw = DataFrameWrap(df)
     # 过滤 去除公安局警察
     df = df[df['max'] >= 100]
-    dw = Filter.filter_yingjie(dw, False)
-    dw1 = Filter.filter_zhuanye(dw, "汉语言")
-    dw11 = Filter.filter_sex(dw1, sex="男", include_buxian=True)
-    dw12 = Filter.filter_sex(dw1, sex="女", include_buxian=True)
-    print(p.single_cal(dw11))
-    print(p.single_cal(dw12))
-    dw2 = Filter.filter_zhuanye(dw, "法学")
-    dw21 = Filter.filter_sex(dw2, sex="男", include_buxian=True)
-    dw22 = Filter.filter_sex(dw2, sex="女", include_buxian=True)
-    print(p.single_cal(dw21))
-    print(p.single_cal(dw22))
-    dw3 = Filter.filter_zhuanye(dw, "计算机")
-    dw31 = Filter.filter_sex(dw3, sex="男", include_buxian=True)
-    dw32 = Filter.filter_sex(dw3, sex="女", include_buxian=True)
-    print(p.single_cal(dw31))
-    print(p.single_cal(dw32))
+    dw = DataFrameWrap(df)
+    yingjie = [True, False]
+    sex = ["男", "女"]
+    zhuanye = ["汉语言", "法学", "计算机"]
+    for x in yingjie:
+        for y in sex:
+            for z in zhuanye:
+                dwx = Filter.filter_yingjie(dw, x)
+                dwy = Filter.filter_sex(dwx, y, include_buxian=True)
+                dwz = Filter.filter_zhuanye(dwy, z)
+                p.single_cal(dwz)
