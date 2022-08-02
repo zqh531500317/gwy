@@ -1,10 +1,13 @@
 from pandas import DataFrame
 import copy
 
+from DataFrameWrap import DataFrameWrap
+
 
 class Filter:
     @staticmethod
-    def filter_yingjie(df: DataFrame, include: bool):
+    def filter_yingjie(dw: DataFrameWrap, include: bool):
+        df = dw.df
         copy_df = copy.deepcopy(df)
         for index, row in copy_df.iterrows():
             sf = row["现有身份要求"]
@@ -18,10 +21,17 @@ class Filter:
             elif include and ("应届" not in sf):
                 copy_df.drop(index, inplace=True)
                 continue
-        return copy_df
+        if include:
+            desc = "仅限应届"
+        else:
+            desc = "排除应届"
+        dw = dw.set_df(copy_df, desc)
+
+        return dw
 
     @staticmethod
-    def filter_zhuanye(df: DataFrame, name: str):
+    def filter_zhuanye(dw: DataFrameWrap, name: str):
+        df = dw.df
         copy_df = copy.deepcopy(df)
         for index, row in copy_df.iterrows():
             zy = row["专业要求"]
@@ -31,10 +41,14 @@ class Filter:
             if name not in zy:
                 copy_df.drop(index, inplace=True)
                 continue
-        return copy_df
+        desc = "限制{}专业".format(name)
+        dw = dw.set_df(copy_df, desc)
+
+        return dw
 
     @staticmethod
-    def filter_sex(df: DataFrame, sex: str, include_buxian: bool):
+    def filter_sex(dw: DataFrameWrap, sex: str, include_buxian: bool):
+        df = dw.df
         copy_df = copy.deepcopy(df)
         for index, row in copy_df.iterrows():
             xb = row["性别要求"]
@@ -46,11 +60,15 @@ class Filter:
             if sex not in xb:
                 copy_df.drop(index, inplace=True)
                 continue
-
-        return copy_df
+        desc = "限制{}".format(sex)
+        if include_buxian:
+            desc += "及不限制"
+        dw = dw.set_df(copy_df, desc)
+        return dw
 
     @staticmethod
-    def filter_huji(df: DataFrame, area: str, include: bool):
+    def filter_huji(dw: DataFrameWrap, area: str, include: bool):
+        df = dw.df
         copy_df = copy.deepcopy(df)
         areacodemap = {}
         areacodemap["01"] = "杭州"
@@ -75,4 +93,10 @@ class Filter:
             else:
                 if include:
                     copy_df.drop(x, inplace=True)
-        return copy_df
+        if include:
+            desc = "仅限{}".format(areacodemap[area])
+        else:
+            desc = "排除{}".format(areacodemap[area])
+        dw = dw.set_df(copy_df, desc)
+
+        return dw

@@ -2,10 +2,9 @@ import math
 import os.path
 import re
 
-import numpy as np
 import pandas as pd
-from pandas import DataFrame
 
+from DataFrameWrap import DataFrameWrap
 from Filter import Filter
 
 
@@ -137,7 +136,25 @@ class DataProcess:
             # 导出表
             self.data.write(res, "2021-result.xlsx")
 
-    #   hujilimit 限户籍 0不考虑 1筛选限制的 2排除限制的
+    def single_cal(self, dw:DataFrameWrap):
+        temp = [0, 0, 0, 0, 0, 0, 0]
+        df = dw.df
+        for index, row in df.iterrows():
+            if math.isnan(row["max"]) or \
+                    math.isnan(row["min"]):
+                continue
+            temp[0] += row["招录人数"]
+            temp[1] += row["缴费人数"]
+            temp[2] += row["max"] * row["招录人数"]
+            temp[3] += row["min"] * row["招录人数"]
+        # 计算
+        temp[4] = temp[2] / temp[0]
+        temp[5] = temp[3] / temp[0]
+        temp[6] = temp[1] / temp[0]
+        print("==={}============".format(dw))
+        print("岗位数{},最高平均分{},进面平均分{},竞争比{}".format(temp[0], temp[4], temp[5], temp[6]))
+
+    # hujilimit 限户籍 0不考虑 1筛选限制的 2排除限制的
     def cal(self, yingjie=False, area="00", hujilimit=0, zhuanyelimit=True):
         # key:专业 value:[职位数,总人数,岗位最高总分,岗位最低总分,最高平均分,最低平均分,竞争比]
         zhuanyemap = dict()
@@ -251,8 +268,19 @@ if __name__ == '__main__':
     # p.cal(yingjie=True, area="06", hujilimit=1, zhuanyelimit=False)
     # p.cal(yingjie=True, area="06", hujilimit=2, zhuanyelimit=False)
     df = p.data.func_zj_huizong()
-    df1 = Filter.filter_huji(df, "06", True)
-    df2 = Filter.filter_huji(df, "06", False)
-    print(df.shape)
-    print(df1.shape)
-    print(df2.shape)
+    dw = DataFrameWrap(df)
+    dw1 = Filter.filter_zhuanye(dw, "汉语言")
+    dw11 = Filter.filter_sex(dw1, sex="男", include_buxian=False)
+    dw12 = Filter.filter_sex(dw1, sex="女", include_buxian=False)
+    print(p.single_cal(dw11))
+    print(p.single_cal(dw12))
+    dw2 = Filter.filter_zhuanye(dw, "法学")
+    dw21 = Filter.filter_sex(dw2, sex="男", include_buxian=False)
+    dw22 = Filter.filter_sex(dw2, sex="女", include_buxian=False)
+    print(p.single_cal(dw21))
+    print(p.single_cal(dw22))
+    dw3 = Filter.filter_zhuanye(dw, "计算机")
+    dw31 = Filter.filter_sex(dw3, sex="男", include_buxian=False)
+    dw32 = Filter.filter_sex(dw3, sex="女", include_buxian=False)
+    print(p.single_cal(dw31))
+    print(p.single_cal(dw32))
