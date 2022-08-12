@@ -2,3 +2,4 @@ xlwings
 pandas
 openpyxl
 xlrd
+sqlalchemy

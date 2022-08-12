@@ -1,11 +1,14 @@
 import math
 import os.path
 import re
-
+import sqlite3
+import sqlalchemy
 import pandas as pd
+from sqlalchemy import create_engine
 
 from DataFrameWrap import DataFrameWrap
 from Filter import Filter
+import unittest
 
 
 class Data:
@@ -24,7 +27,7 @@ class Data:
         return res
 
     def get_zhuanye_zwb_num(self, df):
-        zhuanyevalue = [0, 0, 0]
+        zhuanyevalue = [0] * len(self.zhuanyekey)
 
         for index, row in df.iterrows():
             zhuanye = row[16]
@@ -104,37 +107,49 @@ class Data:
 
 
 class DataProcess:
-    def __init__(self, reload=True):
+    def __init__(self, year, reload=True):
         self.data = Data()
-        if reload or not os.path.exists("test.xlsx"):
-            print("=====reload test.xlsx=======")
-            # 读取2021 职位表和缴费情况表
-            df = self.data.func_zj_zwb(2021)
-            self.data.get_zhuanye_zwb_num(df)
-            jfqk_zj_2022 = self.data.func_zj_jfqk(2021)
-            # 按照职务代码合并
-            res = pd.concat([df, jfqk_zj_2022], axis=0).groupby('职位代码').first().reset_index()
-            # 计算并新增‘竞争比’列
-            res["竞争比"] = res["缴费人数"] / res["招录人数"]
-            # 读取各县市2021 成绩信息表
-            match_file = []
-            pattern_str = '.*' + '.*'.join(["{}-zjsk(.*?)-jmmd(.*?)".format(2021)])
-            re_pattern = re.compile(pattern=pattern_str)
-            file_list = os.listdir(".")
-            for file_name in file_list:
-                if re_pattern.search(file_name):
-                    match_file.append(file_name)
-            ...
-            # 进行合并
-            dflist = []
-            for path in match_file:
-                dflist.append(self.data.func_zj_jmmd(path))
-            df = pd.concat(dflist)
-            # 按照 '招录单位名称','职位名称' 合并 成绩信息表 和 res表
-            res = pd.merge(res, df, on=['招录单位名称', '职位名称'], how='left')
+        if reload or not os.path.exists("{}-result.xlsx".format(year)):
+            self.creatxlsx(year)
 
-            # 导出表
-            self.data.write(res, "2021-result.xlsx")
+    def creatxlsx(self, year):
+        print("=====reload test.xlsx=======")
+        # 读取 职位表和缴费情况表
+        df = self.data.func_zj_zwb(year)
+        self.data.get_zhuanye_zwb_num(df)
+        jfqk_zj = self.data.func_zj_jfqk(year)
+        # 按照职务代码合并
+        res = pd.concat([df, jfqk_zj], axis=0).groupby('职位代码').first().reset_index()
+        # 计算并新增‘竞争比’列
+        res["竞争比"] = res["缴费人数"] / res["招录人数"]
+        # 读取各县市 成绩信息表
+        match_file = []
+        pattern_str = '.*' + '.*'.join(["{}-zjsk(.*?)-jmmd(.*?)".format(year)])
+        re_pattern = re.compile(pattern=pattern_str)
+        file_list = os.listdir(".")
+        for file_name in file_list:
+            if re_pattern.search(file_name):
+                match_file.append(file_name)
+        ...
+        # 合并 计算max min
+        dflist = []
+        for path in match_file:
+            dflist.append(self.data.func_zj_jmmd(path))
+        df = pd.concat(dflist)
+        # 按照 '招录单位名称','职位名称' 合并 成绩信息表 和 res表
+        r = pd.merge(res, df, on=['招录单位名称', '职位名称'], how='left')
+
+        # 导出表
+        self.data.write(r, "{}-result.xlsx".format(year))
+
+    def xlsx2sql(self, name: str, df=None):
+        if df is None:
+            if not os.path.exists(name):
+                raise Exception("xlsx2sql 文件不存在")
+        df = pd.read_excel(name, 0)
+        conn = sqlite3.connect('main.db')
+        conn.commit()
+        df.to_sql('main', conn, if_exists='replace', index=False)
 
     def single_cal(self, dw: DataFrameWrap):
         temp = [0, 0, 0, 0, 0, 0, 0]
@@ -258,7 +273,8 @@ if __name__ == '__main__':
           06：绍兴 07:金华 08:衢州 09:舟山 10:台州
           11:丽水 12 省直 13: 省直公安 14:监狱
           ''')
-    p = DataProcess(reload=False)
+    p = DataProcess(reload=False, year=2022)
+    p.cal(yingjie=True)
     # p.cal(yingjie=True, area="01", hujilimit=1, zhuanyelimit=False)
     # p.cal(yingjie=True, area="01", hujilimit=2, zhuanyelimit=False)
     # p.cal(yingjie=True, area="02", hujilimit=1, zhuanyelimit=False)
@@ -272,8 +288,8 @@ if __name__ == '__main__':
     df = df[df['max'] >= 100]
     dw = DataFrameWrap(df)
     yingjie = [True, False]
-    sex = ["男", "女"]
-    zhuanye = ["汉语言", "法学", "计算机"]
+    sex = ["男"]
+    zhuanye = ["汉语言", "法学", "计算机", "林"]
     for x in yingjie:
         for y in sex:
             for z in zhuanye:
