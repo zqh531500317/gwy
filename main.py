@@ -101,7 +101,7 @@ class Data:
         df.to_excel(writer, float_format='%.5f', index=False)  # table输出为excel, 传入writer
         writer.save()  # 保存
 
-    def func_zj_huizong(self, name="test.xlsx"):
+    def func_zj_huizong(self, name):
         df = pd.read_excel(name, 0)
         return df
 
@@ -113,7 +113,7 @@ class DataProcess:
             self.creatxlsx(year)
 
     def creatxlsx(self, year):
-        print("=====reload test.xlsx=======")
+        print("=====reload 2022-test.xlsx=======")
         # 读取 职位表和缴费情况表
         df = self.data.func_zj_zwb(year)
         self.data.get_zhuanye_zwb_num(df)
@@ -142,11 +142,15 @@ class DataProcess:
         # 导出表
         self.data.write(r, "{}-result.xlsx".format(year))
 
-    def xlsx2sql(self, name: str, df=None):
+        # 生成数据库
+        self.xlsx2sql(year, df=r)
+
+    def xlsx2sql(self, year, name=None, df=None):
         if df is None:
             if not os.path.exists(name):
                 raise Exception("xlsx2sql 文件不存在")
-        df = pd.read_excel(name, 0)
+            df = pd.read_excel(name, 0)
+        df.loc[:'year'] = year
         conn = sqlite3.connect('main.db')
         conn.commit()
         df.to_sql('main', conn, if_exists='replace', index=False)
@@ -163,9 +167,12 @@ class DataProcess:
             temp[2] += row["max"] * row["招录人数"]
             temp[3] += row["min"] * row["招录人数"]
         # 计算
-        temp[4] = temp[2] / temp[0]
-        temp[5] = temp[3] / temp[0]
-        temp[6] = temp[1] / temp[0]
+        if temp[0] == 0:
+            temp[4] = temp[5] = temp[6] = 0
+        else:
+            temp[4] = temp[2] / temp[0]
+            temp[5] = temp[3] / temp[0]
+            temp[6] = temp[1] / temp[0]
         print("==={}============".format(dw))
         print("岗位数{},最高平均分{},进面平均分{},竞争比{}".format(temp[0], temp[4], temp[5], temp[6]))
 
@@ -173,7 +180,7 @@ class DataProcess:
     def cal(self, yingjie=False, area="00", hujilimit=0, zhuanyelimit=True):
         # key:专业 value:[职位数,总人数,岗位最高总分,岗位最低总分,最高平均分,最低平均分,竞争比]
         zhuanyemap = dict()
-        df = self.data.func_zj_huizong()
+        df = self.data.func_zj_huizong("2021-test.xlsx")
         # 过滤 去除公安局警察
         df = df[df['max'] >= 100]
         # 地区过滤 职位代码133XY001003000000
@@ -273,7 +280,8 @@ if __name__ == '__main__':
           06：绍兴 07:金华 08:衢州 09:舟山 10:台州
           11:丽水 12 省直 13: 省直公安 14:监狱
           ''')
-    p = DataProcess(reload=False, year=2022)
+    year = 2021
+    p = DataProcess(reload=False, year=year)
     p.cal(yingjie=True)
     # p.cal(yingjie=True, area="01", hujilimit=1, zhuanyelimit=False)
     # p.cal(yingjie=True, area="01", hujilimit=2, zhuanyelimit=False)
@@ -283,17 +291,26 @@ if __name__ == '__main__':
     # p.cal(yingjie=True, area="03", hujilimit=2, zhuanyelimit=False)
     # p.cal(yingjie=True, area="06", hujilimit=1, zhuanyelimit=False)
     # p.cal(yingjie=True, area="06", hujilimit=2, zhuanyelimit=False)
-    df = p.data.func_zj_huizong()
+    df = p.data.func_zj_huizong(name="{}-test.xlsx".format(year))
     # 过滤 去除公安局警察
     df = df[df['max'] >= 100]
     dw = DataFrameWrap(df)
-    yingjie = [True, False]
+    yingjie = [False]
     sex = ["男"]
     zhuanye = ["汉语言", "法学", "计算机", "林"]
+    xueli = [False]
+    area = ["01", "02", "06"]
     for x in yingjie:
         for y in sex:
             for z in zhuanye:
-                dwx = Filter.filter_yingjie(dw, x)
-                dwy = Filter.filter_sex(dwx, y, include_buxian=True)
-                dwz = Filter.filter_zhuanye(dwy, z)
-                p.single_cal(dwz)
+                for u in area:
+                    for w in xueli:
+                        dwx = Filter.filter_yingjie(dw, x)
+                        dwy = Filter.filter_sex(dwx, y, include_buxian=True)
+                        dwz = Filter.filter_zhuanye(dwy, z)
+                        dwz = Filter.filter_area(dwz, u)
+                        if u != "06":
+                            dwz = Filter.filter_huji(dwz, u, False)
+                        dww = Filter.filter_xueli(dwz, "硕士研究生及以上", include=w)
+                        dwv = Filter.filter_special(dww, "备注", "法律职业", include=False)
+                        p.single_cal(dwv)

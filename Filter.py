@@ -93,9 +93,86 @@ class Filter:
                 if include:
                     copy_df.drop(x, inplace=True)
         if include:
-            desc = "仅限{}".format(areacodemap[area])
+            desc = "户籍仅限{}".format(areacodemap[area])
         else:
-            desc = "排除{}".format(areacodemap[area])
+            desc = "户籍排除{}".format(areacodemap[area])
         dw = dw.set_df(copy_df, desc)
 
+        return dw
+
+    @staticmethod
+    def filter_area(dw: DataFrameWrap, area: str):
+        if area == "00":
+            return dw
+        elif area != "00":
+            df = dw.df
+            copy_df = copy.deepcopy(df)
+            areacodemap = {}
+            areacodemap["01"] = "杭州"
+            areacodemap["02"] = "宁波"
+            areacodemap["03"] = "温州"
+            areacodemap["04"] = "嘉兴"
+            areacodemap["05"] = "湖州"
+            areacodemap["06"] = "绍兴"
+            start = int("133{}000000000000".format(area))
+            end = int("133{}999999999999".format(area))
+            copy_df = copy_df[copy_df.职位代码.between(start, end)]
+            desc = "筛选区域{}".format(areacodemap[area])
+            dw = dw.set_df(copy_df, desc)
+            return dw
+
+    @staticmethod
+    def filter_xueli(dw: DataFrameWrap, xueli: str, include: bool):
+        if (xueli == "" or xueli is None) and include:
+            return dw
+        df = dw.df
+        copy_df = copy.deepcopy(df)
+        for index, row in copy_df.iterrows():
+            xb = row["学历要求"]
+            if isinstance(copy_df.loc[index, "学历要求"], float):
+                copy_df.drop(index, inplace=True)
+                continue
+            if xueli not in xb and include:
+                copy_df.drop(index, inplace=True)
+                continue
+            if xueli in xb and not include:
+                copy_df.drop(index, inplace=True)
+                continue
+        if include:
+            str1 = "限制"
+        else:
+            str1 = "排除"
+        desc = "{}{}".format(str1, xueli)
+        dw = dw.set_df(copy_df, desc)
+        return dw
+
+    @staticmethod
+    def filter_special(dw: DataFrameWrap, key, valueexcept, include, func=None):
+        df = dw.df
+        copy_df = copy.deepcopy(df)
+        for index, row in copy_df.iterrows():
+            xb = row[key]
+            if isinstance(copy_df.loc[index, key], float):
+                copy_df.drop(index, inplace=True)
+                continue
+            if func is None:
+                if valueexcept not in xb and include:
+                    copy_df.drop(index, inplace=True)
+                    continue
+                if valueexcept in xb and not include:
+                    copy_df.drop(index, inplace=True)
+                    continue
+            else:
+                if not func(xb, valueexcept) and include:
+                    copy_df.drop(index, inplace=True)
+                    continue
+                if func(xb, valueexcept) and not include:
+                    copy_df.drop(index, inplace=True)
+                    continue
+        if include:
+            str1 = "限制"
+        else:
+            str1 = "排除"
+        desc = "{}-{}-{}".format(str1, key, valueexcept)
+        dw = dw.set_df(copy_df, desc)
         return dw
