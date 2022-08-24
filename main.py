@@ -297,15 +297,20 @@ if __name__ == '__main__':
     dw = DataFrameWrap(df)
     yingjie = [False]
     sex = ["男"]
-    zhuanye = ["语言", "法学", "计算机", "林", "会计", "农"]
+    sexbuxian = [True, False]
+    zhuanye = ["语言", "法学",  "财务", "林", "农"]
     xueli = [False]
     for x in yingjie:
         for y in sex:
             for z in zhuanye:
                 for w in xueli:
-                    dwx = Filter.filter_yingjie(dw, x)
-                    dwy = Filter.filter_sex(dwx, y, include_buxian=False)
-                    dwz = Filter.filter_zhuanye(dwy, z)
-                    dww = Filter.filter_xueli(dwz, "硕士研究生及以上", include=w)
-                    dwv = Filter.filter_special(dww, "备注", "司法", include=False)
-                    p.single_cal(dwv)
+                    for zz in sexbuxian:
+                        dwx = Filter.filter_yingjie(dw, x)
+                        dwy = Filter.filter_sex(dwx, y, include_buxian=zz)
+                        dwz = Filter.filter_zhuanye(dwy, z)
+                        dww = Filter.filter_xueli(dwz, "硕士研究生及以上", include=w)
+                        dwv = Filter.filter_special(dww, "备注", "司法", include=False)
+                        dwv = Filter.filter_special(dwv, "备注", "杭州", include=False)
+                        dwv = Filter.filter_special(dwv, "备注", "淳安", include=False)
+                        dwv = Filter.filter_special(dwv, "备注", "宁波", include=False)
+                        p.single_cal(dwv)
