@@ -280,9 +280,9 @@ if __name__ == '__main__':
           06：绍兴 07:金华 08:衢州 09:舟山 10:台州
           11:丽水 12 省直 13: 省直公安 14:监狱
           ''')
-    year = 2021
+    year = 2022
     p = DataProcess(reload=False, year=year)
-    p.cal(yingjie=True)
+    # p.cal(yingjie=True)
     # p.cal(yingjie=True, area="01", hujilimit=1, zhuanyelimit=False)
     # p.cal(yingjie=True, area="01", hujilimit=2, zhuanyelimit=False)
     # p.cal(yingjie=True, area="02", hujilimit=1, zhuanyelimit=False)
@@ -297,20 +297,15 @@ if __name__ == '__main__':
     dw = DataFrameWrap(df)
     yingjie = [False]
     sex = ["男"]
-    zhuanye = ["汉语言", "法学", "计算机", "林"]
+    zhuanye = ["语言", "法学", "计算机", "林", "会计", "农"]
     xueli = [False]
-    area = ["01", "02", "06"]
     for x in yingjie:
         for y in sex:
             for z in zhuanye:
-                for u in area:
-                    for w in xueli:
-                        dwx = Filter.filter_yingjie(dw, x)
-                        dwy = Filter.filter_sex(dwx, y, include_buxian=True)
-                        dwz = Filter.filter_zhuanye(dwy, z)
-                        dwz = Filter.filter_area(dwz, u)
-                        if u != "06":
-                            dwz = Filter.filter_huji(dwz, u, False)
-                        dww = Filter.filter_xueli(dwz, "硕士研究生及以上", include=w)
-                        dwv = Filter.filter_special(dww, "备注", "法律职业", include=False)
-                        p.single_cal(dwv)
+                for w in xueli:
+                    dwx = Filter.filter_yingjie(dw, x)
+                    dwy = Filter.filter_sex(dwx, y, include_buxian=False)
+                    dwz = Filter.filter_zhuanye(dwy, z)
+                    dww = Filter.filter_xueli(dwz, "硕士研究生及以上", include=w)
+                    dwv = Filter.filter_special(dww, "备注", "司法", include=False)
+                    p.single_cal(dwv)
